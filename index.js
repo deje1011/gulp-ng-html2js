@@ -3,8 +3,8 @@ var replaceExtension = require('replace-ext');
 var map = require("map-stream");
 
 var TEMPLATES = {
-    MODULE_PER_FILE: "angular.module('<%= moduleName %>', []).run(['$templateCache', function($templateCache) {\n" +
-    "  $templateCache.put('<%= template.url %>',\n    '<%= template.prettyEscapedContent %>');\n" +
+    MODULE_PER_FILE: "angular.module('<%= moduleName %>', []).run(['<%= cacheName %>', function(<%= cacheName %>) {\n" +
+    "  <%= cacheName %>.put('<%= template.url %>',\n    '<%= template.prettyEscapedContent %>');\n" +
     "}]);\n",
 
     SINGLE_MODULE: "(function(module) {\n" +
@@ -13,13 +13,13 @@ var TEMPLATES = {
     "} catch (e) {\n" +
     "  module = angular.module('<%= moduleName %>', []);\n" +
     "}\n" +
-    "module.run(['$templateCache', function($templateCache) {\n" +
-    "  $templateCache.put('<%= template.url %>',\n    '<%= template.prettyEscapedContent %>');\n" +
+    "module.run(['<%= cacheName %>', function(<%= cacheName %>) {\n" +
+    "  <%= cacheName %>.put('<%= template.url %>',\n    '<%= template.prettyEscapedContent %>');\n" +
     "}]);\n" +
     "})();\n",
 
-    SINGLE_DECLARED_MODULE: "angular.module('<%= moduleName %>').run(['$templateCache', function($templateCache) {\n" +
-    "  $templateCache.put('<%= template.url %>',\n    '<%= template.prettyEscapedContent %>');\n" +
+    SINGLE_DECLARED_MODULE: "angular.module('<%= moduleName %>').run(['<%= cacheName %>', function(<%= cacheName %>) {\n" +
+    "  <%= cacheName %>.put('<%= template.url %>',\n    '<%= template.prettyEscapedContent %>');\n" +
     "}]);\n",
 
 	COMMON_JS_EXPORTS: "module.exports = ",
@@ -36,6 +36,7 @@ var TEMPLATES = {
  * @param [options.declareModule] - Whether to try to create the module. Default true, if false it will not create options.moduleName.
  * @param [options.stripPrefix] - The prefix which should be stripped from the file path
  * @param [options.prefix] - The prefix which should be added to the start of the url
+ * @param [options.cacheName] - The cache to use. Defaults to $templateCache. Other example: $translationCache.
  * @returns {stream}
  */
 module.exports = function (options) {
@@ -60,7 +61,7 @@ module.exports = function (options) {
 
     function generateModuleDeclaration(templateFile, options) {
         var template = getTemplate();
-        var templateParams = getTemplateParams();
+        var templateParams = getTemplateParams(options);
 
         return _.template(template)(templateParams);
 
@@ -93,8 +94,9 @@ module.exports = function (options) {
 			return template;
         }
 
-        function getTemplateParams() {
+        function getTemplateParams(options) {
             var params = {
+                cacheName: options.cacheName || '$templateCache',
                 template: {
                     url: getTemplateUrl()
                 }
